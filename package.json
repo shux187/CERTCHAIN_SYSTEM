@@ -1,0 +1,23 @@
+{
+  "name": "certchain",
+  "version": "1.0.0",
+  "description": "Blockchain Certificate Verification System",
+  "private": true,
+  "scripts": {
+    "compile":        "hardhat compile",
+    "test":           "hardhat test",
+    "deploy:local":   "hardhat run scripts/deploy.js --network localhost",
+    "deploy:mumbai":  "hardhat run scripts/deploy.js --network mumbai",
+    "deploy:polygon": "hardhat run scripts/deploy.js --network polygon",
+    "node":           "hardhat node",
+    "backend":        "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+    "web":            "npx serve . -p 3000 --single",
+    "mobile":         "cd mobile && expo start",
+    "setup":          "npm install && pip install -r backend/requirements.txt --break-system-packages"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0",
+    "dotenv": "^16.3.1"
+  }
+}

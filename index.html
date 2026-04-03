@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertChain — Blockchain Certificate Verification</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #1a1a24;
+    --card: #14141e;
+    --card2: #1e1e2e;
+    --purple: #7B5EFF;
+    --purple-light: #9B7FFF;
+    --purple-dim: rgba(123,94,255,0.15);
+    --purple-glow: rgba(123,94,255,0.35);
+    --cyan: #00D4FF;
+    --green: #4ADE80;
+    --red: #FF4D6A;
+    --orange: #FF8C42;
+    --text: #E8E8F0;
+    --text2: #9090A8;
+    --text3: #5A5A72;
+    --border: rgba(255,255,255,0.06);
+    --border2: rgba(123,94,255,0.25);
+    --radius: 20px;
+    --radius-sm: 12px;
+    --font-mono: 'Space Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+    --font-display: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* NOISE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* AMBIENT GLOW */
+  .ambient {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .ambient-1 { width: 500px; height: 500px; background: rgba(123,94,255,0.08); top: -100px; right: -100px; }
+  .ambient-2 { width: 400px; height: 400px; background: rgba(0,212,255,0.05); bottom: 200px; left: -100px; }
+  .ambient-3 { width: 300px; height: 300px; background: rgba(123,94,255,0.06); top: 50%; left: 40%; }
+
+  /* NAVBAR */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.2rem;
+    letter-spacing: -0.02em;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--purple);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 20px var(--purple-glow);
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 10px;
+    transition: all 0.2s;
+  }
+  .nav-links a:hover, .nav-links a.active {
+    color: var(--text);
+    background: var(--bg3);
+  }
+
+  .nav-actions { display: flex; align-items: center; gap: 10px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+
+  .btn-primary {
+    background: var(--purple);
+    color: white;
+    box-shadow: 0 4px 20px var(--purple-glow);
+  }
+  .btn-primary:hover { background: var(--purple-light); transform: translateY(-1px); box-shadow: 0 8px 30px var(--purple-glow); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--purple-light);
+    border: 1px solid var(--border2);
+  }
+  .btn-outline:hover { background: var(--purple-dim); }
+
+  /* WALLET CHIP */
+  .wallet-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .wallet-chip:hover { border-color: var(--border2); color: var(--text); }
+  .wallet-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* MAIN LAYOUT */
+  main {
+    position: relative;
+    z-index: 1;
+    padding-top: 80px;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 80px 32px 60px;
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: var(--purple-dim);
+    border: 1px solid var(--border2);
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--purple-light);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--purple-light), var(--cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    font-size: 1.1rem;
+    color: var(--text2);
+    line-height: 1.7;
+    max-width: 600px;
+    margin: 0 auto 36px;
+    font-weight: 300;
+  }
+
+  .hero-actions { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+
+  /* STATS ROW */
+  .stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    padding: 32px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin: 0 32px;
+  }
+  .stat { text-align: center; }
+  .stat-val {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--text), var(--purple-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label { font-size: 0.8rem; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* SECTION */
+  .section {
+    padding: 60px 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--purple);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::before { content: '//'; opacity: 0.5; }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 40px;
+  }
+
+  /* DASHBOARD GRID */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(123,94,255,0.03), transparent);
+    pointer-events: none;
+  }
+
+  .card-wide { grid-column: span 2; }
+  .card-tall { grid-row: span 2; }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .card-title {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .card-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .icon-purple { background: var(--purple-dim); }
+  .icon-green { background: rgba(74,222,128,0.15); }
+  .icon-red { background: rgba(255,77,106,0.15); }
+  .icon-orange { background: rgba(255,140,66,0.15); }
+
+  /* TIMER CARD */
+  .timer-display {
+    font-family: var(--font-mono);
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .time-segments {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .time-seg {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--cyan);
+    background: rgba(0,212,255,0.1);
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  /* DOT MATRIX */
+  .dot-matrix {
+    display: grid;
+    gap: 3px;
+  }
+  .dot-row { display: flex; gap: 3px; }
+  .dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    background: var(--bg3);
+    transition: background 0.3s;
+  }
+  .dot.active-purple { background: var(--purple); }
+  .dot.active-cyan { background: var(--cyan); }
+  .dot.active-green { background: var(--green); }
+  .dot.active-pink { background: #FF6BB5; }
+  .dot.active-orange { background: var(--orange); }
+
+  /* BIG NUMBER */
+  .big-number {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .big-number sup { font-size: 1rem; font-weight: 400; color: var(--text3); }
+
+  /* PROGRESS BAR */
+  .progress-track {
+    height: 6px;
+    background: var(--bg3);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--purple), var(--cyan));
+    transition: width 0.6s ease;
+  }
+
+  /* STATUS BADGE */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge-green { background: rgba(74,222,128,0.15); color: var(--green); }
+  .badge-red { background: rgba(255,77,106,0.15); color: var(--red); }
+  .badge-purple { background: var(--purple-dim); color: var(--purple-light); }
+  .badge-orange { background: rgba(255,140,66,0.15); color: var(--orange); }
+
+  /* RADAR */
+  .radar-container { position: relative; width: 120px; height: 120px; }
+  .radar-svg { width: 100%; height: 100%; }
+
+  /* SECURITY CARD */
+  .security-alert {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+  .security-number {
+    font-family: var(--font-display);
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  .alert-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(255,77,106,0.1);
+    border: 1px solid rgba(255,77,106,0.25);
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: var(--red);
+  }
+
+  /* CERT LIST */
+  .cert-list { display: flex; flex-direction: column; gap: 10px; }
+  .cert-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: var(--bg3);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .cert-item:hover { border-color: var(--border2); }
+
+  .cert-avatar {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--purple-dim);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .cert-info { flex: 1; min-width: 0; }
+  .cert-name { font-size: 0.875rem; font-weight: 600; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cert-meta { font-size: 0.75rem; color: var(--text3); font-family: var(--font-mono); }
+  .cert-hash { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text3); }
+
+  /* STORAGE CARD */
+  .storage-display {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .storage-used { font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; }
+  .storage-total { font-family: var(--font-mono); font-size: 0.875rem; color: var(--text3); }
+  .storage-bars {
+    display: flex;
+    gap: 4px;
+    margin-top: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text3);
+  }
+  .sbar { display: flex; align-items: center; gap: 4px; }
+  .sbar-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* VERIFY PANEL */
+  .verify-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .input-group { margin-bottom: 20px; }
+  .input-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .input-field {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .input-field:focus { border-color: var(--border2); box-shadow: 0 0 0 3px var(--purple-dim); }
+  .input-field::placeholder { color: var(--text3); }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: var(--bg3);
+  }
+  .upload-zone:hover { border-color: var(--border2); background: var(--purple-dim); }
+  .upload-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .upload-text { font-size: 0.9rem; color: var(--text2); }
+  .upload-sub { font-size: 0.75rem; color: var(--text3); margin-top: 4px; font-family: var(--font-mono); }
+
+  /* RESULT */
+  .result-card {
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    margin-top: 20px;
+    display: none;
+  }
+  .result-valid {
+    background: rgba(74,222,128,0.08);
+    border: 1px solid rgba(74,222,128,0.25);
+  }
+  .result-invalid {
+    background: rgba(255,77,106,0.08);
+    border: 1px solid rgba(255,77,106,0.25);
+  }
+  .result-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .result-status { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; margin-bottom: 8px; }
+  .result-valid .result-status { color: var(--green); }
+  .result-invalid .result-status { color: var(--red); }
+  .result-detail { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text3); }
+
+  /* MULTI-SIG PANEL */
+  .multisig-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+
+  .signers-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .signer-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg3);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+  }
+  .signer-chip.signed { border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.05); }
+  .signer-chip.pending { border-color: rgba(255,140,66,0.3); background: rgba(255,140,66,0.05); }
+  .signer-status { font-size: 14px; }
+
+  /* ACTIVITY FEED */
+  .activity-feed { display: flex; flex-direction: column; gap: 0; }
+  .activity-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+  .activity-content { flex: 1; }
+  .activity-action { font-size: 0.875rem; font-weight: 500; margin-bottom: 3px; }
+  .activity-time { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text3); }
+
+  /* CHAIN INDICATOR */
+  .chain-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--bg3);
+    border-radius: 10px;
+    font-size: 0.8rem;
+    margin-bottom: 16px;
+  }
+  .chain-logo { width: 20px; height: 20px; border-radius: 50%; }
+
+  /* ZEN MODE WIDGET */
+  .zen-widget {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+  }
+  .zen-knob {
+    width: 110px; height: 110px;
+    border-radius: 24px;
+    background: linear-gradient(145deg, #1a1a2e, #0d0d1a);
+    box-shadow: -4px -4px 8px rgba(123,94,255,0.1), 4px 4px 12px rgba(0,0,0,0.6), inset 0 0 60px rgba(123,94,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .zen-knob:hover { box-shadow: -4px -4px 8px rgba(123,94,255,0.2), 4px 4px 12px rgba(0,0,0,0.6), inset 0 0 80px rgba(123,94,255,0.35); }
+  .zen-inner {
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(123,94,255,0.4), rgba(10,10,30,0.9));
+    box-shadow: 0 0 30px rgba(123,94,255,0.3);
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg3);
+    padding: 4px;
+    border-radius: 14px;
+    margin-bottom: 28px;
+    width: fit-content;
+  }
+  .tab-btn {
+    padding: 8px 20px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text3);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn.active { background: var(--card2); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+
+  /* FEATURE GRID */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 20px;
+  }
+  @media (max-width: 700px) { .feature-grid { grid-template-columns: 1fr; } }
+
+  .feature-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: all 0.3s;
+  }
+  .feature-card:hover { border-color: var(--border2); transform: translateY(-3px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+
+  .feature-num {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--purple);
+    margin-bottom: 12px;
+  }
+  .feature-icon { font-size: 2rem; margin-bottom: 12px; }
+  .feature-title { font-family: var(--font-display); font-weight: 700; margin-bottom: 8px; }
+  .feature-desc { font-size: 0.875rem; color: var(--text3); line-height: 1.6; }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px;
+    text-align: center;
+    color: var(--text3);
+    font-size: 0.8rem;
+    font-family: var(--font-mono);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes countUp { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .animate-fadeup { animation: fadeUp 0.6s ease both; }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+  .delay-4 { animation-delay: 0.4s; }
+
+  /* MOBILE NAV */
+  .mobile-nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+  @media (max-width: 768px) {
+    .mobile-nav-toggle { display: block; }
+    .nav-links { display: none; }
+    .stats-row { gap: 20px; flex-wrap: wrap; }
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .card-wide { grid-column: span 1; }
+    .hero { padding: 60px 20px 40px; }
+    nav { padding: 14px 20px; }
+    .section { padding: 40px 20px; }
+  }
+
+  /* LOADING SPINNER */
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--purple);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+  }
+
+  /* QR Mock */
+  .qr-mock {
+    width: 80px; height: 80px;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+  }
+
+  /* SCROLLING TICKER */
+  .ticker-wrap {
+    overflow: hidden;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+    background: var(--bg2);
+  }
+  .ticker-track {
+    display: flex;
+    gap: 60px;
+    animation: ticker 25s linear infinite;
+    white-space: nowrap;
+  }
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text3);
+  }
+  .ticker-item .tdot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+</style>
+</head>
+<body>
+
+<!-- Ambient glows -->
+<div class="ambient ambient-1"></div>
+<div class="ambient ambient-2"></div>
+<div class="ambient ambient-3"></div>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="nav-logo">
+    <div class="logo-icon">⬡</div>
+    CertChain
+  </div>
+
+  <ul class="nav-links">
+    <li><a href="#dashboard" class="active">Dashboard</a></li>
+    <li><a href="#verify">Verify</a></li>
+    <li><a href="#issue">Issue</a></li>
+    <li><a href="#multisig">Multi-Sig</a></li>
+    <li><a href="#features">Features</a></li>
+  </ul>
+
+  <div class="nav-actions">
+    <div class="wallet-chip" id="walletBtn" onclick="connectWallet()">
+      <div class="wallet-dot"></div>
+      <span id="walletAddr">Connect Wallet</span>
+    </div>
+    <button class="btn btn-primary" onclick="showAuth()">Sign In</button>
+    <button class="mobile-nav-toggle">☰</button>
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker-wrap" style="margin-top:65px;">
+  <div class="ticker-track">
+    <span class="ticker-item"><span class="tdot"></span> POLYGON NETWORK · ACTIVE</span>
+    <span class="ticker-item"><span class="tdot"></span> 153,320 CERTS ISSUED</span>
+    <span class="ticker-item"><span class="tdot"></span> 28 MS AVG VERIFICATION TIME</span>
+    <span class="ticker-item"><span class="tdot"></span> SHA-256 ENCRYPTED</span>
+    <span class="ticker-item"><span class="tdot"></span> IPFS DISTRIBUTED STORAGE</span>
+    <span class="ticker-item"><span class="tdot"></span> MULTI-SIG ENABLED</span>
+    <span class="ticker-item"><span class="tdot"></span> POLYGON NETWORK · ACTIVE</span>
+    <span class="ticker-item"><span class="tdot"></span> 153,320 CERTS ISSUED</span>
+    <span class="ticker-item"><span class="tdot"></span> 28 MS AVG VERIFICATION TIME</span>
+    <span class="ticker-item"><span class="tdot"></span> SHA-256 ENCRYPTED</span>
+    <span class="ticker-item"><span class="tdot"></span> IPFS DISTRIBUTED STORAGE</span>
+    <span class="ticker-item"><span class="tdot"></span> MULTI-SIG ENABLED</span>
+  </div>
+</div>
+
+<main>
+  <!-- HERO -->
+  <section class="hero animate-fadeup">
+    <div class="hero-badge">
+      ⬡ Blockchain-Powered · Trustless Verification
+    </div>
+    <h1>Certificates That<br><span>Can't Be Forged</span></h1>
+    <p>Issue, manage, and verify certificates on-chain with cryptographic proof. Multi-signature security, IPFS storage, and instant trustless verification — no intermediaries needed.</p>
+    <div class="hero-actions">
+      <button class="btn btn-primary" onclick="scrollTo('verify')">🔍 Verify Certificate</button>
+      <button class="btn btn-outline" onclick="scrollTo('issue')">✦ Issue Certificate</button>
+      <button class="btn btn-ghost" onclick="scrollTo('features')">Learn More ↓</button>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-row animate-fadeup delay-2">
+    <div class="stat">
+      <div class="stat-val" id="stat1">153,320</div>
+      <div class="stat-label">Certificates Issued</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">99.97%</div>
+      <div class="stat-label">Verification Accuracy</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">0</div>
+      <div class="stat-label">Fraudulent Certificates</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">28ms</div>
+      <div class="stat-label">Avg. Verify Time</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">3</div>
+      <div class="stat-label">Chains Supported</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <section class="section" id="dashboard">
+    <div class="section-label">Dashboard</div>
+    <div class="section-title">System Overview</div>
+
+    <div class="dashboard-grid">
+
+      <!-- TIMER / UPTIME -->
+      <div class="card animate-fadeup delay-1">
+        <div class="card-header">
+          <span class="card-title">System Uptime</span>
+          <div class="card-icon icon-purple">🎓</div>
+        </div>
+        <div class="timer-display" id="uptimeTimer">01:47:19</div>
+        <div class="time-segments">
+          <span class="time-seg" id="tseg1">57m</span>
+          <span class="time-seg" id="tseg2">24m</span>
+          <span class="time-seg" id="tseg3">26m</span>
+        </div>
+        <!-- Mini dot matrix -->
+        <div class="dot-matrix" id="uptimeDots" style="margin-top:8px;"></div>
+      </div>
+
+      <!-- SECURITY STATUS -->
+      <div class="card animate-fadeup delay-2">
+        <div class="card-header">
+          <span class="card-title">Security Status</span>
+          <div class="card-icon icon-red">🛡️</div>
+        </div>
+        <div class="security-alert">Active Threats Blocked</div>
+        <div class="security-number">153 320</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;">
+          <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--text3)">30s ago</span>
+          <span class="badge badge-orange">Quick Scan</span>
+        </div>
+        <div class="alert-box">
+          ⚠️ &nbsp;2 Pending Signatures Required
+        </div>
+      </div>
+
+      <!-- STORAGE / CHAIN DATA -->
+      <div class="card animate-fadeup delay-3">
+        <div class="card-header">
+          <span class="card-title">Chain Storage</span>
+          <div class="card-icon icon-purple">✦</div>
+        </div>
+        <div class="storage-display">
+          <span class="storage-used">5.31</span>
+          <span class="storage-total">/16 GB</span>
+        </div>
+        <div class="badge badge-purple" style="margin-bottom:12px;">28%</div>
+        <!-- Color dot matrix -->
+        <div id="storageDots" style="margin-bottom:12px;"></div>
+        <div class="storage-bars">
+          <span class="sbar"><span class="sbar-dot" style="background:var(--purple)"></span> 5.90 GB</span>
+          <span style="color:var(--border)">|</span>
+          <span class="sbar"><span class="sbar-dot" style="background:var(--cyan)"></span> 2.15 GB</span>
+          <span style="color:var(--border)">|</span>
+          <span class="sbar"><span class="sbar-dot" style="background:var(--green)"></span> 2.59 GB</span>
+        </div>
+      </div>
+
+      <!-- RECENT CERTS - WIDE -->
+      <div class="card card-wide animate-fadeup delay-2">
+        <div class="card-header">
+          <span class="card-title">Recent Certificates</span>
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:0.75rem;">View All</button>
+        </div>
+        <div class="cert-list" id="certList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- ACTIVITY GRID / COMMITS -->
+      <div class="card animate-fadeup delay-3">
+        <div class="card-header">
+          <span class="card-title">Issuance Activity</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px;">
+          <span class="big-number">154 <sup style="font-size:1rem;color:var(--text3)">Total</sup></span>
+          <span style="color:var(--green);font-weight:600;font-size:0.875rem;margin-left:8px;">51 Best</span>
+        </div>
+        <div id="activityGrid"></div>
+      </div>
+
+      <!-- RADAR -->
+      <div class="card animate-fadeup delay-1">
+        <div class="card-header">
+          <span class="card-title">Metrics</span>
+        </div>
+        <div style="display:flex;justify-content:center;">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <!-- Grid lines -->
+            <polygon points="80,20 140,55 140,105 80,140 20,105 20,55" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <polygon points="80,35 125,57.5 125,102.5 80,125 35,102.5 35,57.5" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <polygon points="80,50 110,65 110,95 80,110 50,95 50,65" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <polygon points="80,65 95,72.5 95,87.5 80,95 65,87.5 65,72.5" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+            <!-- Axes -->
+            <line x1="80" y1="20" x2="80" y2="80" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+            <line x1="140" y1="55" x2="80" y2="80" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+            <line x1="140" y1="105" x2="80" y2="80" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+            <line x1="80" y1="140" x2="80" y2="80" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+            <line x1="20" y1="105" x2="80" y2="80" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+            <line x1="20" y1="55" x2="80" y2="80" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+            <!-- Data -->
+            <polygon points="80,32 130,62 128,100 80,130 38,98 42,58" fill="rgba(74,222,128,0.15)" stroke="var(--green)" stroke-width="1.5"/>
+            <circle cx="80" cy="32" r="3" fill="var(--green)"/>
+            <circle cx="130" cy="62" r="3" fill="var(--green)"/>
+            <circle cx="128" cy="100" r="3" fill="var(--green)"/>
+            <circle cx="80" cy="130" r="3" fill="var(--green)"/>
+            <circle cx="38" cy="98" r="3" fill="var(--green)"/>
+            <circle cx="42" cy="58" r="3" fill="var(--green)"/>
+            <!-- Labels -->
+            <text x="80" y="14" text-anchor="middle" fill="rgba(144,144,168,0.8)" font-size="8" font-family="'Space Mono'">Issuance</text>
+            <text x="148" y="52" text-anchor="start" fill="rgba(144,144,168,0.8)" font-size="8" font-family="'Space Mono'">Security</text>
+            <text x="148" y="112" text-anchor="start" fill="rgba(144,144,168,0.8)" font-size="8" font-family="'Space Mono'">Revoke</text>
+            <text x="80" y="152" text-anchor="middle" fill="rgba(144,144,168,0.8)" font-size="8" font-family="'Space Mono'">Verify</text>
+            <text x="12" y="112" text-anchor="end" fill="rgba(144,144,168,0.8)" font-size="8" font-family="'Space Mono'">Speed</text>
+            <text x="12" y="52" text-anchor="end" fill="rgba(144,144,168,0.8)" font-size="8" font-family="'Space Mono'">Trust</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- ZEN/MULTI-SIG -->
+      <div class="card animate-fadeup delay-2">
+        <div class="card-header">
+          <span class="card-title">Multi-Sig Mode</span>
+          <div class="card-icon icon-purple">🌙</div>
+        </div>
+        <div class="zen-widget">
+          <div class="zen-knob" id="zenKnob" onclick="toggleZen()">
+            <div class="zen-inner"></div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:var(--font-display);font-weight:700;margin-bottom:4px;">Multi-Sig Protection</div>
+            <div class="badge badge-green" id="zenStatus">● Active</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALENDAR / SCHEDULE -->
+      <div class="card animate-fadeup delay-1">
+        <div class="card-header">
+          <span class="card-title">Today's Queue</span>
+          <button onclick="" style="background:none;border:none;color:var(--purple);font-size:1.2rem;cursor:pointer;">+</button>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text3);font-family:var(--font-mono);margin-bottom:12px;">Mon 27 Feb</div>
+        <div class="cert-list">
+          <div class="cert-item" style="border-color:rgba(123,94,255,0.3);background:var(--purple-dim);">
+            <div>
+              <div class="cert-name" style="font-size:0.8rem;">Batch Issuance</div>
+              <div class="cert-meta">12:30 - 12:50 · 47 certs</div>
+            </div>
+            <span class="badge badge-purple">Now</span>
+          </div>
+          <div class="cert-item">
+            <div>
+              <div class="cert-name" style="font-size:0.8rem;">Multi-Sig Review</div>
+              <div class="cert-meta">14:00 - 15:00 · 8 signers</div>
+            </div>
+            <span class="badge badge-orange">Pending</span>
+          </div>
+          <div class="cert-item">
+            <div>
+              <div class="cert-name" style="font-size:0.8rem;">IPFS Sync</div>
+              <div class="cert-meta">15:30 · Auto</div>
+            </div>
+            <span class="badge badge-green">Sched.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVITY LOG -->
+      <div class="card card-wide animate-fadeup delay-3">
+        <div class="card-header">
+          <span class="card-title">Blockchain Activity Feed</span>
+          <div class="badge badge-green">● Live</div>
+        </div>
+        <div class="activity-feed" id="activityFeed"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- VERIFY SECTION -->
+  <section class="section" id="verify">
+    <div class="section-label">Verification</div>
+    <div class="section-title">Verify a Certificate</div>
+
+    <div class="verify-panel">
+      <div class="chain-row">
+        <span style="font-size:18px;">⬡</span>
+        <span style="font-size:0.8rem;font-weight:600;">Polygon Network</span>
+        <span style="font-size:0.75rem;color:var(--text3);margin-left:auto;font-family:var(--font-mono);">Chain ID: 137</span>
+        <div class="badge badge-green">Connected</div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(this,'upload')">Upload File</button>
+        <button class="tab-btn" onclick="switchTab(this,'hash')">Enter Hash</button>
+        <button class="tab-btn" onclick="switchTab(this,'id')">Certificate ID</button>
+      </div>
+
+      <div id="tab-upload">
+        <div class="upload-zone" onclick="triggerUpload()">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">Drop your certificate file here</div>
+          <div class="upload-sub">PDF, PNG, JPG, JSON · Max 10MB</div>
+        </div>
+        <input type="file" id="certFile" style="display:none" onchange="handleFileUpload(this)">
+      </div>
+
+      <div id="tab-hash" style="display:none;">
+        <div class="input-group">
+          <label class="input-label">Certificate Hash (SHA-256)</label>
+          <input class="input-field" type="text" placeholder="0x3a7b8c..." id="hashInput">
+        </div>
+      </div>
+
+      <div id="tab-id" style="display:none;">
+        <div class="input-group">
+          <label class="input-label">Certificate ID</label>
+          <input class="input-field" type="text" placeholder="CERT-2024-001..." id="idInput">
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-primary" onclick="verifyCert()" style="flex:1;justify-content:center;">
+          <div class="spinner" id="verifySpinner"></div>
+          <span id="verifyBtnText">🔍 Verify on Blockchain</span>
+        </button>
+      </div>
+
+      <div class="result-card" id="resultCard">
+        <div id="resultIcon" class="result-icon"></div>
+        <div id="resultStatus" class="result-status"></div>
+        <div id="resultDetail" class="result-detail"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ISSUE SECTION -->
+  <section class="section" id="issue">
+    <div class="section-label">Issuance</div>
+    <div class="section-title">Issue a Certificate</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:900px;">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Certificate Details</span>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Recipient Name</label>
+          <input class="input-field" type="text" placeholder="Full name..." id="issueRecipient">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Institution</label>
+          <input class="input-field" type="text" placeholder="Institution name..." id="issueInstitution">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Course / Achievement</label>
+          <input class="input-field" type="text" placeholder="Course title..." id="issueCourse">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Issue Date</label>
+          <input class="input-field" type="date" id="issueDate">
+        </div>
+        <div class="upload-zone" style="padding:20px;margin-bottom:16px;" onclick="document.getElementById('issueFile').click()">
+          <div style="font-size:1.5rem;">📎</div>
+          <div class="upload-text" style="font-size:0.8rem;">Attach Certificate Document</div>
+          <input type="file" id="issueFile" style="display:none">
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="issueCert()">
+          ✦ Issue Certificate on Blockchain
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Multi-Sig Approval</span>
+          <div class="badge badge-orange">2/3 Required</div>
+        </div>
+        <p style="font-size:0.8rem;color:var(--text3);margin-bottom:16px;line-height:1.6;">This certificate requires multi-signature approval before being written to the blockchain.</p>
+        <div class="signers-row" id="signersRow">
+          <div class="signer-chip signed">
+            <span class="signer-status">✅</span>
+            <span>0x7B3F...2a1c</span>
+          </div>
+          <div class="signer-chip signed">
+            <span class="signer-status">✅</span>
+            <span>0xA9D1...8e4b</span>
+          </div>
+          <div class="signer-chip pending">
+            <span class="signer-status">⏳</span>
+            <span>0xC4E8...1f7d</span>
+          </div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:66%"></div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--text3);margin-top:8px;font-family:var(--font-mono);">2 of 3 signatures collected</div>
+
+        <div style="margin-top:20px;">
+          <div class="card-title" style="margin-bottom:12px;">Generated Hash Preview</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:var(--font-mono);font-size:0.7rem;color:var(--purple-light);word-break:break-all;" id="hashPreview">
+            0x3a7b8c4d9e2f1a6b5c8d3e7f2a9b1c4d<br>5e8f3a7b2c9d1e4f6a8b3c7d2e5f9a1b
+          </div>
+        </div>
+
+        <div style="margin-top:16px;" id="qrSection">
+          <div class="card-title" style="margin-bottom:10px;">QR Code</div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="qr-mock">▦</div>
+            <div>
+              <div style="font-size:0.8rem;color:var(--text2);margin-bottom:4px;">Scan to verify instantly</div>
+              <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text3);">CERT-2024-11-27-001</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MULTI-SIG SECTION -->
+  <section class="section" id="multisig">
+    <div class="section-label">Security</div>
+    <div class="section-title">Multi-Signature Control</div>
+    <div style="max-width:800px;">
+      <div class="multisig-panel">
+        <div class="card-header">
+          <div>
+            <div class="card-title" style="margin-bottom:4px;">Active Multi-Sig Policies</div>
+            <div style="font-size:0.8rem;color:var(--text2);">All certificate operations require threshold signatures</div>
+          </div>
+          <div class="badge badge-green">● 3 Active</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px;">
+          <div class="cert-item" style="flex-direction:column;align-items:flex-start;gap:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+              <div>
+                <div class="cert-name">Certificate Issuance Policy</div>
+                <div class="cert-meta">Requires 2 of 3 signers · Admin + Issuer roles</div>
+              </div>
+              <span class="badge badge-green">Active</span>
+            </div>
+            <div class="signers-row" style="margin-bottom:0;">
+              <div class="signer-chip signed"><span>✅</span><span>Admin</span></div>
+              <div class="signer-chip signed"><span>✅</span><span>Issuer</span></div>
+              <div class="signer-chip pending"><span>⏳</span><span>Auditor</span></div>
+            </div>
+          </div>
+
+          <div class="cert-item" style="flex-direction:column;align-items:flex-start;gap:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+              <div>
+                <div class="cert-name">Revocation Policy</div>
+                <div class="cert-meta">Requires 3 of 3 signers · Full consensus</div>
+              </div>
+              <span class="badge badge-orange">Pending</span>
+            </div>
+            <div class="signers-row" style="margin-bottom:0;">
+              <div class="signer-chip signed"><span>✅</span><span>Admin</span></div>
+              <div class="signer-chip pending"><span>⏳</span><span>Issuer</span></div>
+              <div class="signer-chip pending"><span>⏳</span><span>Auditor</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <div class="section-label">Capabilities</div>
+    <div class="section-title">Built for Trust at Scale</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-num">01</div>
+        <div class="feature-icon">⛓️</div>
+        <div class="feature-title">Immutable On-Chain Storage</div>
+        <div class="feature-desc">Certificate hashes written permanently to Ethereum, Polygon, or BSC — no central authority, no tampering.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">02</div>
+        <div class="feature-icon">🔐</div>
+        <div class="feature-title">Multi-Signature Security</div>
+        <div class="feature-desc">Issuance and revocation require threshold consensus from authorized signers — no single point of control.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">03</div>
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Instant Verification</div>
+        <div class="feature-desc">28ms average verification time. Upload, hash, compare — trustless and autonomous, no emails needed.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">04</div>
+        <div class="feature-icon">🌐</div>
+        <div class="feature-title">IPFS Distributed Storage</div>
+        <div class="feature-desc">Full certificate documents stored on IPFS — content-addressed, censorship-resistant, always available.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">05</div>
+        <div class="feature-icon">📱</div>
+        <div class="feature-title">QR Code Verification</div>
+        <div class="feature-desc">Every certificate gets a unique QR code. Scan to verify instantly from any device, anywhere in the world.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-num">06</div>
+        <div class="feature-icon">🔑</div>
+        <div class="feature-title">Role-Based Access Control</div>
+        <div class="feature-desc">Admin, Issuer, and Verifier roles enforced on-chain via smart contract access modifiers.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div>⬡ CertChain · Blockchain Certificate Verification System</div>
+  <div style="margin-top:8px;">Smart Contract: 0x3a7b8c4d9e2f1a6b5c8d3e7f2a9b1c4d · Polygon Mainnet</div>
+</footer>
+
+<!-- AUTH MODAL -->
+<div id="authModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);z-index:500;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:24px;padding:40px;width:90%;max-width:420px;position:relative;">
+    <button onclick="closeAuth()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;">✕</button>
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:2.5rem;margin-bottom:8px;">⬡</div>
+      <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;">Welcome to CertChain</div>
+      <div style="color:var(--text3);font-size:0.875rem;margin-top:6px;">Sign in to issue and manage certificates</div>
+    </div>
+    <button class="btn" style="width:100%;justify-content:center;background:white;color:#333;border-radius:12px;padding:14px;font-size:0.9rem;margin-bottom:12px;" onclick="googleAuth()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </button>
+    <div style="text-align:center;color:var(--text3);font-size:0.75rem;margin:12px 0;">— then —</div>
+    <button class="btn btn-outline" style="width:100%;justify-content:center;" onclick="connectWalletModal()">
+      🔗 Link Crypto Wallet
+    </button>
+    <div style="text-align:center;font-family:var(--font-mono);font-size:0.7rem;color:var(--text3);margin-top:16px;">MetaMask · WalletConnect · Coinbase Wallet</div>
+  </div>
+</div>
+
+<script>
+// ——— DOT MATRIX GENERATORS ———
+function buildDotMatrix(containerId, rows, cols, density, colors) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  container.style.display = 'grid';
+  container.style.gap = '3px';
+  for (let r = 0; r < rows; r++) {
+    const row = document.createElement('div');
+    row.className = 'dot-row';
+    for (let c = 0; c < cols; c++) {
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      const rand = Math.random();
+      if (rand < density) {
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        dot.classList.add('active-' + color);
+      }
+      row.appendChild(dot);
+    }
+    container.appendChild(row);
+  }
+}
+
+// Uptime dots (blue/cyan stripes)
+function buildUptimeDots() {
+  const container = document.getElementById('uptimeDots');
+  if (!container) return;
+  container.innerHTML = '';
+  container.style.display = 'flex';
+  container.style.gap = '3px';
+  for (let i = 0; i < 20; i++) {
+    const dot = document.createElement('div');
+    dot.style.cssText = `width:${Math.random() > 0.2 ? 10 : 6}px;height:10px;border-radius:2px;background:${i < 14 ? 'rgba(0,212,255,0.7)' : 'var(--bg3)'};`;
+    container.appendChild(dot);
+  }
+}
+
+buildDotMatrix('storageDots', 5, 12, 0.55, ['purple','cyan','pink','orange','green']);
+buildDotMatrix('activityGrid', 6, 12, 0.6, ['green','green','green','purple']);
+buildUptimeDots();
+
+// ——— CERT LIST ———
+const certs = [
+  { emoji: '🎓', name: 'Alex Johnson', course: 'BSc Computer Science', institution: 'MIT', date: '2024-11-15', status: 'valid', hash: '0x3a7b...2c1d' },
+  { emoji: '📜', name: 'Maria Santos', course: 'Blockchain Development', institution: 'Coursera', date: '2024-11-20', status: 'valid', hash: '0xB9D1...4e8f' },
+  { emoji: '🏆', name: 'James Liu', course: 'MSc Data Science', institution: 'Stanford', date: '2024-11-22', status: 'valid', hash: '0xC4E8...7a3b' },
+  { emoji: '📋', name: 'Priya Sharma', course: 'AWS Solutions Architect', institution: 'Amazon', date: '2024-11-24', status: 'revoked', hash: '0xF7D2...9c1e' },
+];
+
+const certList = document.getElementById('certList');
+certs.forEach(c => {
+  const item = document.createElement('div');
+  item.className = 'cert-item';
+  item.innerHTML = `
+    <div class="cert-avatar">${c.emoji}</div>
+    <div class="cert-info">
+      <div class="cert-name">${c.name} · ${c.course}</div>
+      <div class="cert-meta">${c.institution} · ${c.date}</div>
+    </div>
+    <div style="text-align:right;">
+      <span class="badge badge-${c.status === 'valid' ? 'green' : 'red'}">${c.status === 'valid' ? '✓ Valid' : '✗ Revoked'}</span>
+      <div class="cert-hash" style="margin-top:4px;">${c.hash}</div>
+    </div>
+  `;
+  certList.appendChild(item);
+});
+
+// ——— ACTIVITY FEED ———
+const activities = [
+  { color: 'var(--green)', action: 'Certificate issued · Alex Johnson · MIT', time: '2 min ago' },
+  { color: 'var(--purple)', action: 'Multi-sig approval · 2/3 completed · Batch #47', time: '5 min ago' },
+  { color: 'var(--cyan)', action: 'Verification request · Maria Santos · Blockchain Dev', time: '8 min ago' },
+  { color: 'var(--orange)', action: 'Revocation initiated · CERT-2024-048 · Pending signatures', time: '15 min ago' },
+  { color: 'var(--red)', action: 'Invalid verification attempt blocked', time: '23 min ago' },
+];
+
+const feed = document.getElementById('activityFeed');
+activities.forEach(a => {
+  const item = document.createElement('div');
+  item.className = 'activity-item';
+  item.innerHTML = `
+    <div class="activity-dot" style="background:${a.color};box-shadow:0 0 6px ${a.color}"></div>
+    <div class="activity-content">
+      <div class="activity-action">${a.action}</div>
+      <div class="activity-time">${a.time}</div>
+    </div>
+  `;
+  feed.appendChild(item);
+});
+
+// ——— UPTIME TIMER ———
+let seconds = 6439;
+function updateTimer() {
+  seconds++;
+  const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+  const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+  const s = String(seconds % 60).padStart(2, '0');
+  const el = document.getElementById('uptimeTimer');
+  if (el) el.textContent = `${h}:${m}:${s}`;
+}
+setInterval(updateTimer, 1000);
+
+// ——— VERIFY ———
+function switchTab(btn, tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['upload','hash','id'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+  });
+}
+
+function triggerUpload() { document.getElementById('certFile').click(); }
+
+function handleFileUpload(input) {
+  if (input.files[0]) {
+    const zone = input.closest ? input.previousElementSibling : document.querySelector('.upload-zone');
+    document.querySelector('.upload-zone').innerHTML = `<div style="font-size:2rem">✅</div><div class="upload-text">${input.files[0].name}</div><div class="upload-sub">Ready to verify</div>`;
+  }
+}
+
+function verifyCert() {
+  const spinner = document.getElementById('verifySpinner');
+  const btnText = document.getElementById('verifyBtnText');
+  spinner.style.display = 'block';
+  btnText.textContent = 'Verifying...';
+
+  setTimeout(() => {
+    spinner.style.display = 'none';
+    btnText.textContent = '🔍 Verify on Blockchain';
+
+    const isValid = Math.random() > 0.3;
+    const result = document.getElementById('resultCard');
+    result.style.display = 'block';
+    result.className = 'result-card ' + (isValid ? 'result-valid' : 'result-invalid');
+    document.getElementById('resultIcon').textContent = isValid ? '✅' : '❌';
+    document.getElementById('resultStatus').textContent = isValid ? 'CERTIFICATE VALID' : 'CERTIFICATE INVALID';
+    document.getElementById('resultDetail').innerHTML = isValid
+      ? `Hash: 0x3a7b8c4d9e2f1a6b...<br>Issuer: 0x7B3F...2a1c<br>Timestamp: ${new Date().toISOString()}<br>Status: Active · Not Revoked`
+      : `Hash mismatch detected. This certificate may have been tampered with or does not exist on-chain.`;
+  }, 2200);
+}
+
+// ——— ISSUE ———
+function issueCert() {
+  const name = document.getElementById('issueRecipient').value;
+  const inst = document.getElementById('issueInstitution').value;
+  const course = document.getElementById('issueCourse').value;
+  if (!name || !inst || !course) {
+    alert('Please fill in all required fields.');
+    return;
+  }
+  const hash = '0x' + Array.from({length:32}, () => Math.floor(Math.random()*16).toString(16)).join('');
+  document.getElementById('hashPreview').textContent = hash;
+  alert(`✅ Certificate submitted for multi-sig approval!\n\nHash: ${hash.slice(0,20)}...\nAwaiting 2/3 signatures.`);
+}
+
+// ——— ZEN / MULTI-SIG ———
+let zenActive = true;
+function toggleZen() {
+  zenActive = !zenActive;
+  const status = document.getElementById('zenStatus');
+  const knob = document.getElementById('zenKnob');
+  status.textContent = zenActive ? '● Active' : '○ Inactive';
+  status.className = 'badge ' + (zenActive ? 'badge-green' : 'badge-red');
+  knob.style.boxShadow = zenActive
+    ? '-4px -4px 8px rgba(123,94,255,0.2), 4px 4px 12px rgba(0,0,0,0.6), inset 0 0 80px rgba(123,94,255,0.35)'
+    : '0 0 0 rgba(0,0,0,0), 4px 4px 12px rgba(0,0,0,0.6)';
+}
+
+// ——— WALLET ———
+function connectWallet() {
+  const btn = document.getElementById('walletAddr');
+  if (btn.textContent === 'Connect Wallet') {
+    btn.textContent = '0x7B3F...2a1c';
+  } else {
+    btn.textContent = 'Connect Wallet';
+  }
+}
+function connectWalletModal() { closeAuth(); connectWallet(); }
+
+// ——— AUTH ———
+function showAuth() {
+  document.getElementById('authModal').style.display = 'flex';
+}
+function closeAuth() {
+  document.getElementById('authModal').style.display = 'none';
+}
+function googleAuth() {
+  closeAuth();
+  alert('🔐 Google Authentication Flow\n\nIn production: OAuth 2.0 redirect to accounts.google.com\n\nAfter sign-in, you\'ll be prompted to link your crypto wallet.');
+}
+
+// ——— SCROLL ———
+function scrollTo(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ——— HASH PREVIEW UPDATE ———
+['issueRecipient','issueInstitution','issueCourse','issueDate'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    const str = ['issueRecipient','issueInstitution','issueCourse','issueDate'].map(i => document.getElementById(i).value).join('|');
+    if (str.replace(/\|/g,'')) {
+      document.getElementById('hashPreview').textContent = '0x' + Array.from({length:32}, () => Math.floor(Math.random()*16).toString(16)).join('');
+    }
+  });
+});
+
+// ——— LIVE ACTIVITY TICKER ———
+let activityCount = 0;
+setInterval(() => {
+  if (activityCount++ % 8 !== 0) return;
+  const newActions = [
+    'New verification request received',
+    'Certificate CERT-' + Math.floor(Math.random()*9999) + ' issued on Polygon',
+    'Multi-sig threshold reached for batch #' + Math.floor(Math.random()*99),
+    'IPFS sync completed · 12 documents uploaded',
+  ];
+  const feedEl = document.getElementById('activityFeed');
+  if (!feedEl) return;
+  const item = document.createElement('div');
+  item.className = 'activity-item';
+  item.style.animation = 'slideIn 0.4s ease';
+  item.innerHTML = `
+    <div class="activity-dot" style="background:var(--cyan);box-shadow:0 0 6px var(--cyan)"></div>
+    <div class="activity-content">
+      <div class="activity-action">${newActions[Math.floor(Math.random()*newActions.length)]}</div>
+      <div class="activity-time">just now</div>
+    </div>
+  `;
+  feedEl.insertBefore(item, feedEl.firstChild);
+  if (feedEl.children.length > 6) feedEl.removeChild(feedEl.lastChild);
+}, 1000);
+</script>
+</body>
+</html>

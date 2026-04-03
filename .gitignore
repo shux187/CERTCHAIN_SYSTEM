@@ -1,0 +1,39 @@
+# Environment
+.env
+.env.local
+deployment.json
+
+# Node
+node_modules/
+npm-debug.log
+
+# Hardhat
+cache/
+artifacts/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Expo / React Native
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+.env

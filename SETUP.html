@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertChain — Setup Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0f; --bg2:#111118; --bg3:#1a1a24; --card:#14141e;
+  --purple:#7B5EFF; --purpleL:#9B7FFF; --purpleD:rgba(123,94,255,0.12);
+  --cyan:#00D4FF; --green:#4ADE80; --red:#FF4D6A; --orange:#FF8C42; --yellow:#FFD166;
+  --text:#E8E8F0; --text2:#9090A8; --text3:#5A5A72;
+  --border:rgba(255,255,255,0.06); --border2:rgba(123,94,255,0.25);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;line-height:1.6;padding:0;}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:280px 1fr;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:280px;
+  background:var(--bg2);border-right:1px solid var(--border);
+  overflow-y:auto;padding:28px 0;
+  display:flex;flex-direction:column;
+  z-index:50;
+}
+.sidebar-logo{
+  display:flex;align-items:center;gap:10px;
+  padding:0 20px 24px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:16px;
+}
+.logo-hex{
+  width:36px;height:36px;background:var(--purple);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 0 16px rgba(123,94,255,0.4);
+}
+.logo-name{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;}
+.logo-tag{font-size:0.7rem;color:var(--text3);}
+
+.nav-section{padding:0 12px;margin-bottom:8px;}
+.nav-title{font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;padding:0 8px;margin-bottom:6px;font-family:'Space Mono',monospace;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:10px;cursor:pointer;
+  color:var(--text2);font-size:0.85rem;font-weight:500;
+  text-decoration:none;transition:all 0.15s;
+  border:1px solid transparent;
+}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:var(--purpleD);color:var(--purpleL);border-color:var(--border2);}
+.nav-num{
+  width:22px;height:22px;border-radius:6px;
+  background:var(--bg3);display:flex;align-items:center;justify-content:center;
+  font-size:0.7rem;font-family:'Space Mono',monospace;color:var(--text3);flex-shrink:0;
+}
+.nav-item.active .nav-num{background:var(--purple);color:#fff;}
+
+/* MAIN */
+.main{margin-left:280px;padding:48px 56px;max-width:900px;}
+
+/* HERO */
+.page-hero{margin-bottom:56px;}
+.page-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:5px 14px;background:var(--purpleD);border:1px solid var(--border2);
+  border-radius:100px;font-size:0.7rem;font-weight:600;color:var(--purpleL);
+  letter-spacing:0.08em;text-transform:uppercase;margin-bottom:18px;
+  font-family:'Space Mono',monospace;
+}
+.page-title{font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:16px;}
+.page-title span{background:linear-gradient(135deg,var(--purpleL),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.page-subtitle{font-size:1.05rem;color:var(--text2);max-width:580px;font-weight:300;}
+
+/* FILE TREE */
+.tree{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:24px;font-family:'Space Mono',monospace;font-size:0.8rem;
+  margin-bottom:40px;
+}
+.tree-header{
+  display:flex;align-items:center;gap:8px;margin-bottom:16px;
+  padding-bottom:12px;border-bottom:1px solid var(--border);
+}
+.tree-dots{display:flex;gap:6px;}
+.tree-dot{width:12px;height:12px;border-radius:50%;}
+.tree-title{color:var(--text3);font-size:0.7rem;}
+.tree-line{color:var(--text3);line-height:2;}
+.tree-folder{color:var(--purpleL);font-weight:700;}
+.tree-file-sol{color:#82aaff;}
+.tree-file-py{color:#89DDFF;}
+.tree-file-tsx{color:var(--cyan);}
+.tree-file-js{color:var(--yellow);}
+.tree-file-html{color:var(--orange);}
+.tree-file-json{color:var(--green);}
+.tree-file-md{color:var(--text2);}
+.tree-file-env{color:var(--red);}
+.tree-comment{color:var(--text3);font-style:italic;}
+
+/* STEP */
+.step{margin-bottom:60px;}
+.step-header{
+  display:flex;align-items:flex-start;gap:16px;margin-bottom:24px;
+  padding-bottom:20px;border-bottom:1px solid var(--border);
+}
+.step-num{
+  width:44px;height:44px;flex-shrink:0;
+  border-radius:12px;background:var(--purple);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;
+  box-shadow:0 0 20px rgba(123,94,255,0.3);
+}
+.step-title{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:4px;}
+.step-sub{color:var(--text3);font-size:0.875rem;}
+
+/* PREREQ CARDS */
+.prereq-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px;}
+.prereq-card{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:16px;display:flex;align-items:flex-start;gap:12px;
+}
+.prereq-icon{font-size:1.6rem;flex-shrink:0;}
+.prereq-name{font-weight:600;margin-bottom:2px;font-size:0.9rem;}
+.prereq-ver{font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--purple);}
+.prereq-desc{font-size:0.8rem;color:var(--text3);margin-top:4px;}
+
+/* CODE BLOCK */
+.code-wrap{margin:16px 0;border-radius:14px;overflow:hidden;border:1px solid var(--border);}
+.code-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg3);padding:10px 16px;
+  border-bottom:1px solid var(--border);
+}
+.code-lang{font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--text3);}
+.code-copy{
+  font-size:0.7rem;color:var(--text3);cursor:pointer;
+  background:none;border:none;padding:2px 8px;border-radius:6px;
+  transition:all 0.2s;font-family:'Space Mono',monospace;
+}
+.code-copy:hover{background:var(--border);color:var(--text);}
+pre{
+  background:var(--bg2);padding:20px;margin:0;
+  font-family:'Space Mono',monospace;font-size:0.78rem;
+  line-height:1.8;overflow-x:auto;color:var(--text);
+}
+.c-comment{color:var(--text3);}
+.c-cmd{color:var(--green);}
+.c-str{color:#C3E88D;}
+.c-key{color:var(--purpleL);}
+.c-val{color:var(--cyan);}
+.c-note{color:var(--orange);}
+.c-path{color:#FF9CDD;}
+
+/* INFO / WARNING / SUCCESS BOXES */
+.callout{
+  display:flex;gap:14px;padding:16px 20px;border-radius:12px;
+  margin:20px 0;border:1px solid;
+}
+.callout-info{background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.2);}
+.callout-warn{background:rgba(255,140,66,0.06);border-color:rgba(255,140,66,0.25);}
+.callout-success{background:rgba(74,222,128,0.06);border-color:rgba(74,222,128,0.25);}
+.callout-danger{background:rgba(255,77,106,0.06);border-color:rgba(255,77,106,0.25);}
+.callout-icon{font-size:1.2rem;flex-shrink:0;margin-top:1px;}
+.callout-body{flex:1;}
+.callout-title{font-weight:700;font-size:0.875rem;margin-bottom:4px;}
+.callout-info .callout-title{color:var(--cyan);}
+.callout-warn .callout-title{color:var(--orange);}
+.callout-success .callout-title{color:var(--green);}
+.callout-danger .callout-title{color:var(--red);}
+.callout-text{font-size:0.85rem;color:var(--text2);line-height:1.6;}
+
+/* INLINE CODE */
+code{
+  background:var(--bg3);border:1px solid var(--border);
+  padding:2px 7px;border-radius:5px;
+  font-family:'Space Mono',monospace;font-size:0.8em;color:var(--purpleL);
+}
+
+/* CHECKLIST */
+.checklist{list-style:none;display:flex;flex-direction:column;gap:8px;margin:16px 0;}
+.checklist li{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:0.875rem;color:var(--text2);padding:10px 14px;
+  background:var(--card);border-radius:10px;border:1px solid var(--border);
+}
+.check-icon{flex-shrink:0;margin-top:1px;}
+
+/* FLOW DIAGRAM */
+.flow{
+  display:flex;align-items:center;gap:0;
+  overflow-x:auto;padding:20px 0;margin:20px 0;flex-wrap:nowrap;
+}
+.flow-box{
+  background:var(--card);border:1px solid var(--border2);border-radius:12px;
+  padding:12px 16px;text-align:center;min-width:110px;flex-shrink:0;
+}
+.flow-box-title{font-weight:700;font-size:0.8rem;margin-bottom:4px;}
+.flow-box-sub{font-size:0.7rem;color:var(--text3);font-family:'Space Mono',monospace;}
+.flow-arrow{color:var(--text3);font-size:1.2rem;padding:0 8px;flex-shrink:0;}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:40px 0;}
+
+/* PORT TABLE */
+.port-table{width:100%;border-collapse:collapse;margin:16px 0;}
+.port-table th,.port-table td{
+  padding:10px 16px;text-align:left;
+  border-bottom:1px solid var(--border);font-size:0.875rem;
+}
+.port-table th{color:var(--text3);font-family:'Space Mono',monospace;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;background:var(--bg3);}
+.port-table td:first-child{font-family:'Space Mono',monospace;color:var(--cyan);}
+.port-table tr:last-child td{border-bottom:none;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px;}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .main{margin-left:0;padding:28px 20px;}
+  .prereq-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-hex">⬡</div>
+    <div>
+      <div class="logo-name">CertChain</div>
+      <div class="logo-tag">Setup Guide v1.0</div>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-title">Getting Started</div>
+    <a href="#structure" class="nav-item active">
+      <div class="nav-num">0</div>File Structure
+    </a>
+    <a href="#prerequisites" class="nav-item">
+      <div class="nav-num">1</div>Prerequisites
+    </a>
+    <a href="#clone" class="nav-item">
+      <div class="nav-num">2</div>Project Setup
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-title">Blockchain</div>
+    <a href="#contract" class="nav-item">
+      <div class="nav-num">3</div>Smart Contract
+    </a>
+    <a href="#deploy-local" class="nav-item">
+      <div class="nav-num">4</div>Deploy Locally
+    </a>
+    <a href="#deploy-testnet" class="nav-item">
+      <div class="nav-num">5</div>Deploy to Testnet
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-title">Backend & Auth</div>
+    <a href="#google-auth" class="nav-item">
+      <div class="nav-num">6</div>Google OAuth Setup
+    </a>
+    <a href="#backend" class="nav-item">
+      <div class="nav-num">7</div>Backend Server
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-title">Frontend</div>
+    <a href="#web" class="nav-item">
+      <div class="nav-num">8</div>Web Dashboard
+    </a>
+    <a href="#mobile" class="nav-item">
+      <div class="nav-num">9</div>Mobile App
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-title">Production</div>
+    <a href="#testing" class="nav-item">
+      <div class="nav-num">10</div>Testing
+    </a>
+    <a href="#production" class="nav-item">
+      <div class="nav-num">11</div>Go Live
+    </a>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- HERO -->
+  <div class="page-hero">
+    <div class="page-badge">⬡ Complete Setup Guide</div>
+    <h1 class="page-title">Get CertChain<br><span>Running in Minutes</span></h1>
+    <p class="page-subtitle">From zero to a fully running blockchain certificate system — local node, backend API, web dashboard, and mobile app.</p>
+  </div>
+
+  <!-- ── 0. FILE STRUCTURE ─────────────────────────────────────────────────── -->
+  <section id="structure" class="step">
+    <div class="step-header">
+      <div class="step-num">0</div>
+      <div>
+        <div class="step-title">File Structure</div>
+        <div class="step-sub">Everything you need, organized and ready to deploy</div>
+      </div>
+    </div>
+
+    <div class="tree">
+      <div class="tree-header">
+        <div class="tree-dots">
+          <div class="tree-dot" style="background:#FF5F57"></div>
+          <div class="tree-dot" style="background:#FEBC2E"></div>
+          <div class="tree-dot" style="background:#28C840"></div>
+        </div>
+        <div class="tree-title">certchain/ — project root</div>
+      </div>
+<pre style="background:transparent;padding:0;font-size:0.78rem;">
+<span class="tree-folder">certchain/</span>                          <span class="tree-comment">← project root</span>
+│
+├── <span class="tree-file-sol">contracts/</span>
+│   └── <span class="tree-file-sol">CertificateRegistry.sol</span>     <span class="tree-comment">← Solidity smart contract</span>
+│
+├── <span class="tree-file-js">scripts/</span>
+│   └── <span class="tree-file-js">deploy.js</span>                   <span class="tree-comment">← Hardhat deployment script</span>
+│
+├── <span class="tree-folder">test/</span>
+│   └── <span class="tree-file-js">CertificateRegistry.test.js</span> <span class="tree-comment">← Contract unit tests</span>
+│
+├── <span class="tree-folder">backend/</span>
+│   ├── <span class="tree-file-py">main.py</span>                     <span class="tree-comment">← FastAPI server (all API logic)</span>
+│   ├── <span class="tree-file-json">requirements.txt</span>            <span class="tree-comment">← Python dependencies</span>
+│   └── <span class="tree-file-json">CertificateRegistry.abi.json</span> <span class="tree-comment">← Auto-generated after deploy</span>
+│
+├── <span class="tree-folder">mobile/</span>
+│   ├── <span class="tree-file-tsx">App.tsx</span>                     <span class="tree-comment">← React Native root (all screens)</span>
+│   ├── <span class="tree-file-json">app.json</span>                    <span class="tree-comment">← Expo configuration</span>
+│   ├── <span class="tree-file-json">package.json</span>                <span class="tree-comment">← Mobile dependencies</span>
+│   ├── <span class="tree-file-json">tsconfig.json</span>               <span class="tree-comment">← TypeScript config</span>
+│   └── <span class="tree-file-md">assets/</span>                     <span class="tree-comment">← App icons, splash screen</span>
+│
+├── <span class="tree-file-html">index.html</span>                      <span class="tree-comment">← Web dashboard (zero-dependency)</span>
+├── <span class="tree-file-js">hardhat.config.js</span>               <span class="tree-comment">← Hardhat config (all networks)</span>
+├── <span class="tree-file-json">package.json</span>                    <span class="tree-comment">← Root npm scripts</span>
+├── <span class="tree-file-env">.env</span>                            <span class="tree-comment">← Your secrets (never commit)</span>
+├── <span class="tree-file-env">.env.example</span>                    <span class="tree-comment">← Template (safe to commit)</span>
+├── <span class="tree-file-md">.gitignore</span>                      <span class="tree-comment">← Excludes .env, node_modules</span>
+└── <span class="tree-file-md">README.md</span>                       <span class="tree-comment">← Project documentation</span>
+</pre>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <div class="callout-title">How the parts connect</div>
+        <div class="callout-text">The <strong>smart contract</strong> lives on Polygon. The <strong>backend</strong> reads/writes to it via Web3.py and serves a REST API. The <strong>web dashboard</strong> and <strong>mobile app</strong> call that API. The ABI file (<code>CertificateRegistry.abi.json</code>) is auto-generated by the deploy script and placed in the backend folder automatically.</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 1. PREREQUISITES ──────────────────────────────────────────────────── -->
+  <section id="prerequisites" class="step">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Prerequisites</div>
+        <div class="step-sub">Install these before anything else</div>
+      </div>
+    </div>
+
+    <div class="prereq-grid">
+      <div class="prereq-card">
+        <div class="prereq-icon">🟢</div>
+        <div>
+          <div class="prereq-name">Node.js</div>
+          <div class="prereq-ver">v18+ required (v20 recommended)</div>
+          <div class="prereq-desc">Needed for Hardhat, npm scripts, and Expo CLI. Download from nodejs.org</div>
+        </div>
+      </div>
+      <div class="prereq-card">
+        <div class="prereq-icon">🐍</div>
+        <div>
+          <div class="prereq-name">Python</div>
+          <div class="prereq-ver">3.10+ required (3.11 recommended)</div>
+          <div class="prereq-desc">For the FastAPI backend. Download from python.org</div>
+        </div>
+      </div>
+      <div class="prereq-card">
+        <div class="prereq-icon">🦊</div>
+        <div>
+          <div class="prereq-name">MetaMask</div>
+          <div class="prereq-ver">Browser Extension or Mobile App</div>
+          <div class="prereq-desc">For local testing. You'll need a wallet with testnet MATIC. metamask.io</div>
+        </div>
+      </div>
+      <div class="prereq-card">
+        <div class="prereq-icon">📱</div>
+        <div>
+          <div class="prereq-name">Expo Go (optional)</div>
+          <div class="prereq-ver">For mobile dev preview</div>
+          <div class="prereq-desc">Install on your phone to preview the React Native app instantly.</div>
+        </div>
+      </div>
+      <div class="prereq-card">
+        <div class="prereq-icon">🌐</div>
+        <div>
+          <div class="prereq-name">Git</div>
+          <div class="prereq-ver">Any recent version</div>
+          <div class="prereq-desc">For version control. git-scm.com</div>
+        </div>
+      </div>
+      <div class="prereq-card">
+        <div class="prereq-icon">🔵</div>
+        <div>
+          <div class="prereq-name">VS Code (recommended)</div>
+          <div class="prereq-ver">With Solidity + Python extensions</div>
+          <div class="prereq-desc">Recommended IDE. Install the "Solidity" and "Pylance" extensions.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <div class="callout-title">Verify your installations first</div>
+        <div class="callout-text">Run these in your terminal before proceeding to confirm everything is installed correctly.</div>
+      </div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — verification check</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># Check all required tools are installed</span>
+<span class="c-cmd">node</span> --version        <span class="c-comment"># Should show v18.x.x or higher</span>
+<span class="c-cmd">npm</span>  --version        <span class="c-comment"># Should show 9.x.x or higher</span>
+<span class="c-cmd">python3</span> --version     <span class="c-comment"># Should show 3.10.x or higher</span>
+<span class="c-cmd">pip3</span> --version        <span class="c-comment"># Should show pip 23.x or higher</span>
+<span class="c-cmd">git</span> --version         <span class="c-comment"># Any version is fine</span></pre>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 2. PROJECT SETUP ──────────────────────────────────────────────────── -->
+  <section id="clone" class="step">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">Project Setup</div>
+        <div class="step-sub">Copy files and install all dependencies</div>
+      </div>
+    </div>
+
+    <p style="color:var(--text2);margin-bottom:16px;">Create the project folder and copy all the downloaded files into it, maintaining the structure shown in Step 0. Then run:</p>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — root setup</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># 1. Navigate into the project root</span>
+<span class="c-cmd">cd</span> certchain
+
+<span class="c-comment"># 2. Install Hardhat and blockchain tools</span>
+<span class="c-cmd">npm install</span>
+
+<span class="c-comment"># 3. Copy the environment template</span>
+<span class="c-cmd">cp</span> .env.example .env
+
+<span class="c-comment"># 4. Install backend Python dependencies</span>
+<span class="c-cmd">cd</span> backend
+<span class="c-cmd">pip3 install</span> -r requirements.txt
+
+<span class="c-comment"># 5. Go back to root</span>
+<span class="c-cmd">cd</span> ..</pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — mobile setup</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># Install Expo CLI globally (once)</span>
+<span class="c-cmd">npm install</span> -g expo-cli eas-cli
+
+<span class="c-comment"># Install mobile app dependencies</span>
+<span class="c-cmd">cd</span> mobile
+<span class="c-cmd">npm install</span>
+<span class="c-cmd">cd</span> ..</pre>
+    </div>
+
+    <div class="callout callout-success">
+      <div class="callout-icon">✅</div>
+      <div class="callout-body">
+        <div class="callout-title">After this step you should have</div>
+        <div class="callout-text"><code>node_modules/</code> in the root, <code>mobile/node_modules/</code>, and all Python packages installed. No errors should appear.</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 3. SMART CONTRACT ─────────────────────────────────────────────────── -->
+  <section id="contract" class="step">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <div>
+        <div class="step-title">Compile the Smart Contract</div>
+        <div class="step-sub">Compile the Solidity contract and generate the ABI</div>
+      </div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — compile</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># From the project root — compile the Solidity contract</span>
+<span class="c-cmd">npx hardhat compile</span>
+
+<span class="c-comment"># Expected output:</span>
+<span class="c-comment"># Compiled 1 Solidity file successfully</span>
+<span class="c-comment"># Artifacts written to: artifacts/</span></pre>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <div class="callout-title">What compilation produces</div>
+        <div class="callout-text">Hardhat compiles the Solidity contract and writes the ABI + bytecode to <code>artifacts/contracts/CertificateRegistry.sol/CertificateRegistry.json</code>. The deploy script will automatically copy the ABI to <code>backend/CertificateRegistry.abi.json</code> when you deploy.</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 4. DEPLOY LOCAL ───────────────────────────────────────────────────── -->
+  <section id="deploy-local" class="step">
+    <div class="step-header">
+      <div class="step-num">4</div>
+      <div>
+        <div class="step-title">Deploy Locally (Recommended First)</div>
+        <div class="step-sub">Run a local blockchain node and deploy — no wallet or testnet tokens needed</div>
+      </div>
+    </div>
+
+    <div class="callout callout-success">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <div class="callout-title">Do this first — it's free and instant</div>
+        <div class="callout-text">Hardhat ships with a built-in Ethereum node. You can run the entire system locally without any real funds or internet connection. Perfect for development and testing.</div>
+      </div>
+    </div>
+
+    <p style="color:var(--text2);margin-bottom:12px;">Open <strong>two terminal windows</strong>. In terminal 1:</p>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — Terminal 1: Start local blockchain node</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># Start the local Hardhat node (keep this running)</span>
+<span class="c-cmd">npx hardhat node</span>
+
+<span class="c-comment"># This prints 20 test wallets with 10,000 ETH each.</span>
+<span class="c-comment"># Copy the first private key — you'll need it for .env</span>
+<span class="c-comment">#</span>
+<span class="c-comment"># Account #0: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266</span>
+<span class="c-comment"># Private Key: 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</span>
+<span class="c-comment">#</span>
+<span class="c-comment"># Started HTTP server at: http://127.0.0.1:8545</span></pre>
+    </div>
+
+    <p style="color:var(--text2);margin:16px 0 12px;">In terminal 2, deploy the contract:</p>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — Terminal 2: Deploy contract</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># Deploy to the local Hardhat node</span>
+<span class="c-cmd">npm run deploy:local</span>
+
+<span class="c-comment"># ═══════════════════════════════════════════</span>
+<span class="c-comment">#   CertChain — Smart Contract Deployment</span>
+<span class="c-comment"># ═══════════════════════════════════════════</span>
+<span class="c-comment"># Deployer: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266</span>
+<span class="c-comment"># ✅ CertificateRegistry deployed to: 0x5FbDB2315678afecb367f032d93F642f64180aa3</span>
+<span class="c-comment"># 📄 ABI exported to: backend/CertificateRegistry.abi.json</span>
+<span class="c-comment"># ─── Add to your .env ───────────────────────</span>
+<span class="c-comment"># CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3</span></pre>
+    </div>
+
+    <p style="color:var(--text2);margin:16px 0 12px;">Update your <code>.env</code> file with the printed contract address:</p>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">.env — update these values</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-key">RPC_URL</span>=<span class="c-val">http://127.0.0.1:8545</span>
+<span class="c-key">CHAIN_ID</span>=<span class="c-val">31337</span>
+<span class="c-key">CONTRACT_ADDRESS</span>=<span class="c-val">0x5FbDB2315678afecb367f032d93F642f64180aa3</span>  <span class="c-comment">← paste yours here</span>
+<span class="c-key">PRIVATE_KEY</span>=<span class="c-val">0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</span>  <span class="c-comment">← from node output</span></pre>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 5. DEPLOY TESTNET ─────────────────────────────────────────────────── -->
+  <section id="deploy-testnet" class="step">
+    <div class="step-header">
+      <div class="step-num">5</div>
+      <div>
+        <div class="step-title">Deploy to Polygon Mumbai Testnet</div>
+        <div class="step-sub">When local testing is done — deploy to a real network with free testnet MATIC</div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <div class="callout-title">You need testnet MATIC first</div>
+        <div class="callout-text">Get free testnet MATIC from the Mumbai faucet: <strong>faucet.polygon.technology</strong>. Connect MetaMask to Mumbai (Chain ID 80001), paste your wallet address, and request tokens.</div>
+      </div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">.env — Mumbai testnet config</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-key">RPC_URL</span>=<span class="c-val">https://rpc-mumbai.maticvigil.com</span>
+<span class="c-key">CHAIN_ID</span>=<span class="c-val">80001</span>
+<span class="c-key">PRIVATE_KEY</span>=<span class="c-val">0xYourWalletPrivateKey</span>   <span class="c-comment">← from MetaMask: Account Details → Export Private Key</span>
+<span class="c-key">MUMBAI_RPC_URL</span>=<span class="c-val">https://rpc-mumbai.maticvigil.com</span></pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — deploy to Mumbai</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-cmd">npm run deploy:mumbai</span>
+
+<span class="c-comment"># After deploy, update .env with the printed CONTRACT_ADDRESS</span>
+<span class="c-comment"># The ABI is automatically copied to backend/CertificateRegistry.abi.json</span></pre>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 6. GOOGLE AUTH ─────────────────────────────────────────────────────── -->
+  <section id="google-auth" class="step">
+    <div class="step-header">
+      <div class="step-num">6</div>
+      <div>
+        <div class="step-title">Configure Google OAuth</div>
+        <div class="step-sub">Set up Google Sign-In for web and mobile</div>
+      </div>
+    </div>
+
+    <ul class="checklist">
+      <li><span class="check-icon">1️⃣</span>Go to <strong>console.cloud.google.com</strong> and create a new project (or select existing)</li>
+      <li><span class="check-icon">2️⃣</span>Navigate to <strong>APIs &amp; Services → Credentials → Create Credentials → OAuth 2.0 Client ID</strong></li>
+      <li><span class="check-icon">3️⃣</span>For <strong>Web</strong>: set Authorized redirect URIs to <code>http://localhost:3000</code> and your production domain</li>
+      <li><span class="check-icon">4️⃣</span>For <strong>Android</strong>: create another OAuth client, select "Android", add your package name <code>com.certchain.app</code> and SHA-1 fingerprint</li>
+      <li><span class="check-icon">5️⃣</span>For <strong>iOS</strong>: create another OAuth client, select "iOS", add bundle ID <code>com.certchain.app</code></li>
+      <li><span class="check-icon">6️⃣</span>Copy the <strong>Web Client ID</strong> — you need this in both <code>.env</code> and <code>mobile/app.json</code></li>
+    </ul>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">.env — add Google Client ID</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-key">GOOGLE_CLIENT_ID</span>=<span class="c-val">123456789-abcdefg.apps.googleusercontent.com</span></pre>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">ℹ️</div>
+      <div class="callout-body">
+        <div class="callout-title">Local testing without Google</div>
+        <div class="callout-text">For local development, you can skip real Google auth. The backend will still work — the Google token verification will fail gracefully and you can test all blockchain features without it.</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 7. BACKEND ────────────────────────────────────────────────────────── -->
+  <section id="backend" class="step">
+    <div class="step-header">
+      <div class="step-num">7</div>
+      <div>
+        <div class="step-title">Start the Backend Server</div>
+        <div class="step-sub">FastAPI + Web3.py — the API layer connecting frontend to blockchain</div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <div class="callout-title">Do Step 4 first</div>
+        <div class="callout-text">The backend needs <code>backend/CertificateRegistry.abi.json</code> to exist. That file is auto-generated by the deploy script. Make sure you've deployed the contract before starting the backend.</div>
+      </div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — start backend</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># From the project root</span>
+<span class="c-cmd">npm run backend</span>
+
+<span class="c-comment"># Or manually:</span>
+<span class="c-cmd">cd</span> backend
+<span class="c-cmd">uvicorn</span> main:app --host 0.0.0.0 --port 8000 --reload
+
+<span class="c-comment"># Expected output:</span>
+<span class="c-comment"># INFO:     Started server process</span>
+<span class="c-comment"># INFO:     Uvicorn running on http://0.0.0.0:8000</span>
+<span class="c-comment"># INFO:     Application startup complete.</span></pre>
+    </div>
+
+    <p style="color:var(--text2);margin:16px 0 8px;">Verify the server is running and connected to the blockchain:</p>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — health check</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-cmd">curl</span> http://localhost:8000/health
+
+<span class="c-comment"># Expected response:</span>
+<span class="c-comment"># {"status":"ok","chain_connected":true,"chain_id":31337,"block":1}</span></pre>
+    </div>
+
+    <p style="color:var(--text2);margin:16px 0 8px;">Interactive API docs available at:</p>
+
+    <table class="port-table">
+      <tr><th>URL</th><th>Description</th></tr>
+      <tr><td>http://localhost:8000/docs</td><td>Swagger UI — interactive API explorer</td></tr>
+      <tr><td>http://localhost:8000/redoc</td><td>ReDoc — clean API documentation</td></tr>
+      <tr><td>http://localhost:8000/health</td><td>Health + chain connection check</td></tr>
+      <tr><td>http://localhost:8000/stats</td><td>Platform statistics</td></tr>
+    </table>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 8. WEB DASHBOARD ──────────────────────────────────────────────────── -->
+  <section id="web" class="step">
+    <div class="step-header">
+      <div class="step-num">8</div>
+      <div>
+        <div class="step-title">Launch the Web Dashboard</div>
+        <div class="step-sub">Zero-dependency single-file HTML app</div>
+      </div>
+    </div>
+
+    <p style="color:var(--text2);margin-bottom:16px;">The web dashboard is a single <code>index.html</code> file with no build step required.</p>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — serve the web app</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># Option A: use the npm script (installs serve if needed)</span>
+<span class="c-cmd">npm run web</span>
+
+<span class="c-comment"># Option B: use Python's built-in server</span>
+<span class="c-cmd">python3</span> -m http.server 3000
+
+<span class="c-comment"># Option C: just open the file directly in your browser</span>
+<span class="c-cmd">open</span> index.html        <span class="c-comment"># macOS</span>
+<span class="c-cmd">start</span> index.html       <span class="c-comment"># Windows</span>
+<span class="c-cmd">xdg-open</span> index.html   <span class="c-comment"># Linux</span>
+
+<span class="c-comment"># Dashboard is at: http://localhost:3000</span></pre>
+    </div>
+
+    <div class="callout callout-success">
+      <div class="callout-icon">✅</div>
+      <div class="callout-body">
+        <div class="callout-title">Web dashboard works standalone</div>
+        <div class="callout-text">The web dashboard can run without the backend — all UI features are interactive. The blockchain calls will be simulated. Once the backend is running on port 8000, all live features activate automatically.</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 9. MOBILE ─────────────────────────────────────────────────────────── -->
+  <section id="mobile" class="step">
+    <div class="step-header">
+      <div class="step-num">9</div>
+      <div>
+        <div class="step-title">Run the Mobile App</div>
+        <div class="step-sub">React Native + Expo — preview on device or emulator</div>
+      </div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — start mobile dev server</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-cmd">cd</span> mobile
+<span class="c-cmd">npm run start</span>
+
+<span class="c-comment"># Expo will print a QR code in the terminal.</span>
+<span class="c-comment"># Scan it with the Expo Go app on your phone.</span>
+<span class="c-comment">#</span>
+<span class="c-comment"># Or press:</span>
+<span class="c-comment">#   a → open Android emulator</span>
+<span class="c-comment">#   i → open iOS simulator (macOS only)</span>
+<span class="c-comment">#   w → open in web browser</span></pre>
+    </div>
+
+    <p style="color:var(--text2);margin:20px 0 12px;">Point the mobile app at your local backend. Edit <code>mobile/App.tsx</code> line:</p>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">mobile/App.tsx — update API base URL</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment">// Change this line near the top of App.tsx:</span>
+<span class="c-key">const</span> API_BASE = <span class="c-str">'http://localhost:8000'</span>;     <span class="c-comment">← for iOS simulator</span>
+<span class="c-key">const</span> API_BASE = <span class="c-str">'http://10.0.2.2:8000'</span>;      <span class="c-comment">← for Android emulator</span>
+<span class="c-key">const</span> API_BASE = <span class="c-str">'http://YOUR_LAN_IP:8000'</span>;   <span class="c-comment">← for real device on same WiFi</span>
+<span class="c-comment"># Find your LAN IP: ifconfig | grep "inet " (Mac/Linux) or ipconfig (Windows)</span></pre>
+    </div>
+
+    <p style="color:var(--text2);margin:20px 0 12px;"><strong>Build production APK/IPA:</strong></p>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — production builds</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># Login to Expo (free account required)</span>
+<span class="c-cmd">eas login</span>
+
+<span class="c-comment"># Configure project (run once)</span>
+<span class="c-cmd">eas build:configure</span>
+
+<span class="c-comment"># Build for Android (creates .apk / .aab)</span>
+<span class="c-cmd">eas build</span> --platform android
+
+<span class="c-comment"># Build for iOS (creates .ipa — requires Apple Developer account)</span>
+<span class="c-cmd">eas build</span> --platform ios
+
+<span class="c-comment"># Build both at once</span>
+<span class="c-cmd">eas build</span> --platform all</pre>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 10. TESTING ───────────────────────────────────────────────────────── -->
+  <section id="testing" class="step">
+    <div class="step-header">
+      <div class="step-num">10</div>
+      <div>
+        <div class="step-title">Run Tests</div>
+        <div class="step-sub">Verify the smart contract and API behave correctly</div>
+      </div>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — contract unit tests</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># Run all Hardhat tests (no node required — uses in-memory EVM)</span>
+<span class="c-cmd">npm test</span>
+
+<span class="c-comment"># Expected output:</span>
+<span class="c-comment">#   CertificateRegistry</span>
+<span class="c-comment">#     Role Management</span>
+<span class="c-comment">#       ✔ owner has ADMIN_ROLE (45ms)</span>
+<span class="c-comment">#       ✔ can grant ISSUER_ROLE</span>
+<span class="c-comment">#       ✔ non-admin cannot grant roles</span>
+<span class="c-comment">#     Direct Issuance</span>
+<span class="c-comment">#       ✔ emits CertificateIssued event</span>
+<span class="c-comment">#       ✔ cannot issue duplicate</span>
+<span class="c-comment">#       ✔ verifies valid certificate</span>
+<span class="c-comment">#     Multi-Sig Issuance</span>
+<span class="c-comment">#       ✔ creates request and auto-executes at threshold</span>
+<span class="c-comment">#       ✔ cannot sign twice</span>
+<span class="c-comment">#       ✔ unauthorized signer is rejected</span>
+<span class="c-comment">#     Revocation</span>
+<span class="c-comment">#       ✔ revocation requires multi-sig</span>
+<span class="c-comment">#       ✔ verification fails after revocation</span>
+<span class="c-comment">#     Verification</span>
+<span class="c-comment">#       ✔ returns NOT_FOUND for unknown hash</span>
+<span class="c-comment">#   12 passing (1.2s)</span></pre>
+    </div>
+
+    <div class="code-wrap">
+      <div class="code-bar"><span class="code-lang">bash — manual API tests</span><button class="code-copy" onclick="copyCode(this)">copy</button></div>
+<pre><span class="c-comment"># With the backend running, test the full flow:</span>
+
+<span class="c-comment"># 1. Issue a certificate</span>
+<span class="c-cmd">curl</span> -X POST http://localhost:8000/issue \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipient_name": "Alex Johnson",
+    "institution": "MIT",
+    "course": "BSc Computer Science",
+    "issue_date": "2024-11-27",
+    "threshold": 1
+  }'
+
+<span class="c-comment"># Copy the cert_hash from the response, then:</span>
+
+<span class="c-comment"># 2. Verify the certificate</span>
+<span class="c-cmd">curl</span> -X POST http://localhost:8000/verify \
+  -H "Content-Type: application/json" \
+  -d '{"cert_hash": "0xYourHashHere"}'
+
+<span class="c-comment"># 3. Fetch certificate details</span>
+<span class="c-cmd">curl</span> http://localhost:8000/certificate/0xYourHashHere</pre>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ── 11. PRODUCTION ────────────────────────────────────────────────────── -->
+  <section id="production" class="step">
+    <div class="step-header">
+      <div class="step-num">11</div>
+      <div>
+        <div class="step-title">Go Live — Production Checklist</div>
+        <div class="step-sub">Everything to check before deploying to mainnet</div>
+      </div>
+    </div>
+
+    <div class="callout callout-danger">
+      <div class="callout-icon">🚨</div>
+      <div class="callout-body">
+        <div class="callout-title">Never commit your private key or .env file</div>
+        <div class="callout-text">Your <code>.env</code> file is already in <code>.gitignore</code>. Use a secrets manager (AWS Secrets Manager, HashiCorp Vault, or environment variables on your server) in production. Never paste private keys in code.</div>
+      </div>
+    </div>
+
+    <ul class="checklist">
+      <li><span class="check-icon">☐</span>Deploy contract to Polygon mainnet: <code>npm run deploy:polygon</code></li>
+      <li><span class="check-icon">☐</span>Update <code>.env</code> with mainnet <code>RPC_URL</code>, <code>CHAIN_ID=137</code>, and new <code>CONTRACT_ADDRESS</code></li>
+      <li><span class="check-icon">☐</span>Grant <code>ISSUER_ROLE</code> to authorized wallets via Hardhat console or Polygonscan</li>
+      <li><span class="check-icon">☐</span>Set a strong random <code>JWT_SECRET</code> (use: <code>openssl rand -hex 32</code>)</li>
+      <li><span class="check-icon">☐</span>Deploy backend behind nginx with HTTPS (Let's Encrypt / Certbot)</li>
+      <li><span class="check-icon">☐</span>Update <code>mobile/App.tsx</code> <code>API_BASE</code> to your production HTTPS URL</li>
+      <li><span class="check-icon">☐</span>Update Google OAuth redirect URIs to include your production domain</li>
+      <li><span class="check-icon">☐</span>Set up IPFS node or configure Pinata API credentials</li>
+      <li><span class="check-icon">☐</span>Run <code>npm test</code> — all 12 tests must pass</li>
+      <li><span class="check-icon">☐</span>Build mobile app: <code>cd mobile && eas build --platform all</code></li>
+      <li><span class="check-icon">☐</span>Submit to App Store and Google Play</li>
+    </ul>
+
+    <hr class="divider" style="margin:32px 0;">
+
+    <p style="font-family:'Space Mono',monospace;font-size:0.8rem;color:var(--text3);text-align:center;">
+      ⬡ CertChain · All systems running · Polygon · SHA-256 · Multi-Sig
+    </p>
+  </section>
+
+  <!-- PORTS TABLE -->
+  <div style="margin-top:40px;">
+    <p style="font-weight:700;margin-bottom:12px;">Running services at a glance:</p>
+    <table class="port-table">
+      <tr><th>Service</th><th>URL</th><th>Notes</th></tr>
+      <tr><td>Hardhat Node</td><td>http://localhost:8545</td><td>Keep running for local dev</td></tr>
+      <tr><td>Backend API</td><td>http://localhost:8000</td><td>FastAPI + Web3.py</td></tr>
+      <tr><td>API Docs</td><td>http://localhost:8000/docs</td><td>Swagger UI</td></tr>
+      <tr><td>Web Dashboard</td><td>http://localhost:3000</td><td>Or open index.html directly</td></tr>
+      <tr><td>Mobile (Expo)</td><td>exp://localhost:8081</td><td>Scan QR with Expo Go</td></tr>
+    </table>
+  </div>
+
+</main>
+</div>
+
+<script>
+// Active nav on scroll
+const sections = document.querySelectorAll('section[id]');
+const navItems = document.querySelectorAll('.nav-item');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 100) current = s.id;
+  });
+  navItems.forEach(n => {
+    n.classList.toggle('active', n.getAttribute('href') === '#' + current);
+  });
+});
+
+// Copy code blocks
+function copyCode(btn) {
+  const pre = btn.closest('.code-wrap').querySelector('pre');
+  const text = pre.innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copied!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = 'copy'; btn.style.color = ''; }, 1800);
+  });
+}
+</script>
+</body>
+</html>
